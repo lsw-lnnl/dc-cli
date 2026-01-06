@@ -12,6 +12,7 @@ program
     .command("install <gitUrl> <componentPath> [targetDir]")
     .description("Download and install a component from git repository")
     .option('-b, --branch <branch>', 'Specify git branch', 'master')
+    .option('-y, --yes', 'Automatically overwrite existing directory without prompting')
     .action(async (gitUrl, componentPath, targetDir = "./src/components", options) => {
     try {
         console.log(chalk.blue(`Downloading component from ${gitUrl} branch ${options.branch}...`));
@@ -28,7 +29,7 @@ program
         }
         console.log(chalk.blue(`Start installing component to target directory...`));
         // 安装组件到目标目录，同时传入依赖信息
-        const installed = await installComponent(files, targetDir, dependencies, devDependencies);
+        const installed = await installComponent(files, targetDir, dependencies, devDependencies, options.yes);
         // 只在实际安装完成时显示成功提示
         if (installed) {
             console.log(chalk.green("Component installed successfully!"));

@@ -4,6 +4,17 @@ import path from 'node:path';
 import os from 'node:os';
 import { packageJson } from './get-package.js';
 import chalk from 'chalk';
+// 二进制文件扩展名列表
+const BINARY_EXTENSIONS = [
+    '.png', '.gif', '.jpg', '.jpeg', '.ico', '.webp', '.bmp',
+    '.woff', '.woff2', '.ttf', '.eot', '.otf',
+    '.pdf', '.zip', '.mp3', '.mp4', '.wav'
+];
+// 判断是否为二进制文件
+function isBinaryFile(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    return BINARY_EXTENSIONS.includes(ext);
+}
 export async function downloadComponent(gitUrl, componentPath, branch = 'master') {
     const tempDir = path.join(os.tmpdir(), `${packageJson.name}-${Date.now()}`);
     await fs.ensureDir(tempDir);
@@ -51,10 +62,14 @@ async function getComponentFiles(componentDir) {
                 await processDirectory(fullPath);
             }
             else {
-                const content = await fs.readFile(fullPath, 'utf-8');
+                const binary = isBinaryFile(fullPath);
+                const content = binary
+                    ? await fs.readFile(fullPath) // 返回 Buffer
+                    : await fs.readFile(fullPath, 'utf-8'); // 返回 string
                 files.push({
                     path: relativePath,
-                    content
+                    content,
+                    isBinary: binary
                 });
             }
         }

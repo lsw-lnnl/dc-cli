@@ -84,7 +84,8 @@ export async function installComponent(
   files: ComponentFile[], 
   targetDir: string,
   dependencies: Record<string, string> = {},
-  devDependencies: Record<string, string> = {}
+  devDependencies: Record<string, string> = {},
+  force: boolean = false
 ): Promise<boolean> {
   let projectRoot = path.resolve(targetDir)
   const rootDir = path.parse(projectRoot).root
@@ -113,10 +114,10 @@ export async function installComponent(
   // 从组件文件中提取所有导入的包
   const allDeps = new Map<string, string>()
 
-  // 先从文件中解析实际使用的依赖
+  // 先从文件中解析实际使用的依赖（只处理非二进制的文本文件）
   for (const file of files) {
-    if (file.path.endsWith('.ts') || file.path.endsWith('.tsx') || file.path.endsWith('.vue')) {
-      const deps = extractDependencies(file.content)
+    if (!file.isBinary && (file.path.endsWith('.ts') || file.path.endsWith('.tsx') || file.path.endsWith('.vue'))) {
+      const deps = extractDependencies(file.content as string)
       deps.forEach(dep => {
         if (!allDeps.has(dep)) {
           const version = dependencies[dep] || 'latest'
@@ -177,19 +178,24 @@ export async function installComponent(
 
   // 检查目标目录是否已存在
   if (await fs.pathExists(targetDir)) {
-    const { confirm } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'confirm',
-      message: chalk.yellow(`Directory ${targetDir} already exists. Do you want to overwrite it?`),
-      default: false
-    }])
+    if (force) {
+      // 使用 -y 参数时自动覆盖
+      console.log(chalk.yellow(`Directory ${targetDir} already exists. Overwriting...`))
+    } else {
+      const { confirm } = await inquirer.prompt([{
+        type: 'confirm',
+        name: 'confirm',
+        message: chalk.yellow(`Directory ${targetDir} already exists. Do you want to overwrite it?`),
+        default: false
+      }])
 
-    if (!confirm) {
-      console.log(chalk.blue('Installation cancelled'))
-      return false
+      if (!confirm) {
+        console.log(chalk.blue('Installation cancelled'))
+        return false
+      }
     }
 
-    // 如果用户确认覆盖，则删除原目录
+    // 删除原目录
     await fs.remove(targetDir)
   }
 

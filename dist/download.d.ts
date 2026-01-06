@@ -1,6 +1,9 @@
+/// <reference types="node" />
+/// <reference types="node" />
 export interface ComponentFile {
     path: string;
-    content: string;
+    content: string | Buffer;
+    isBinary: boolean;
 }
 export interface DownloadResult {
     files: ComponentFile[];

@@ -7,7 +7,21 @@ import chalk from 'chalk'
 
 export interface ComponentFile {
   path: string
-  content: string
+  content: string | Buffer
+  isBinary: boolean
+}
+
+// 二进制文件扩展名列表
+const BINARY_EXTENSIONS = [
+  '.png', '.gif', '.jpg', '.jpeg', '.ico', '.webp', '.bmp',
+  '.woff', '.woff2', '.ttf', '.eot', '.otf',
+  '.pdf', '.zip', '.mp3', '.mp4', '.wav'
+]
+
+// 判断是否为二进制文件
+function isBinaryFile(filePath: string): boolean {
+  const ext = path.extname(filePath).toLowerCase()
+  return BINARY_EXTENSIONS.includes(ext)
 }
 
 export interface DownloadResult {
@@ -70,10 +84,14 @@ async function getComponentFiles(componentDir: string): Promise<ComponentFile[]>
       if (entry.isDirectory()) {
         await processDirectory(fullPath)
       } else {
-        const content = await fs.readFile(fullPath, 'utf-8')
+        const binary = isBinaryFile(fullPath)
+        const content = binary
+          ? await fs.readFile(fullPath)          // 返回 Buffer
+          : await fs.readFile(fullPath, 'utf-8') // 返回 string
         files.push({
           path: relativePath,
-          content
+          content,
+          isBinary: binary
         })
       }
     }
